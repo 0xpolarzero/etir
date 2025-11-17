@@ -3,6 +3,9 @@
 ## Project Structure & Module Organization
 Zig sources live in `src/` (core logic, C ABI exports, N-API glue). Build recipes live in `build/*.zig`, keeping `build.zig` a thin router. JS/TS code sits in `bindings/js/` with outputs under `bindings/js/dist/`. Tests stay inline: Zig checks in `.zig` files and Vitest specs in `bindings/js/src/*.spec.ts`.
 
+## Zig Reference Notes
+Whenever you touch Zig array lists or JSON manipulation, read the focused playbooks in `docs/zig/array_list.md` and `docs/zig/json.md` first; follow their patterns instead of reinventing helpers so LLMs and humans stay aligned with the intended APIs.
+
 ## Build, Test & Development Commands
 - `zig build` – compiles static/shared libs and addon; use `zig build node` or `zig build package` when you only need the N-API artifact or the full staged package.
 - `zig build test` – runs Zig inline tests plus Vitest through the bindings workspace.
