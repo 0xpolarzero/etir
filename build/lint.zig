@@ -2,10 +2,11 @@ const std = @import("std");
 const common = @import("common.zig");
 
 pub const Inputs = struct {
-    stage_step: *std.Build.Step,
+    install_step: *std.Build.Step,
 };
 
 pub const Outputs = struct {
+    fmt_step: *std.Build.Step,
     lint_step: *std.Build.Step,
 };
 
@@ -24,17 +25,21 @@ pub fn setup(b: *std.Build, js: common.JsConfig, inputs: Inputs) Outputs {
     const zig_fmt = b.addSystemCommand(fmt_args.toOwnedSlice(b.allocator) catch @panic("OOM"));
 
     const biome_format = common.packageManagerCommand(b, js, &.{ "run", "format" });
-    biome_format.step.dependOn(inputs.stage_step);
+    biome_format.step.dependOn(inputs.install_step);
+
+    const fmt_step = b.step("fmt", "Format Zig and JS sources");
+    fmt_step.dependOn(&zig_fmt.step);
+    fmt_step.dependOn(&biome_format.step);
 
     const biome_lint = common.packageManagerCommand(b, js, &.{ "run", "lint" });
-    biome_lint.step.dependOn(inputs.stage_step);
+    biome_lint.step.dependOn(inputs.install_step);
 
-    const lint_step = b.step("lint", "Format + lint Zig and Node sources");
-    lint_step.dependOn(&zig_fmt.step);
-    lint_step.dependOn(&biome_format.step);
+    const lint_step = b.step("lint", "Run linters after formatting Zig/JS sources");
+    lint_step.dependOn(fmt_step);
     lint_step.dependOn(&biome_lint.step);
 
     return .{
+        .fmt_step = fmt_step,
         .lint_step = lint_step,
     };
 }

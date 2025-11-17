@@ -10,8 +10,8 @@ This spec covers the implementation of the DOCX compare engine and its Zig wrapp
 
 Primary files:
 
-- `native/comparer/src/EtirComparer.csproj`
-- `native/comparer/Program.cs`
+- `src/comparer/dotnet/EtirComparer.csproj`
+- `src/comparer/dotnet/Program.cs`
 - `src/comparer/compare.zig`
 - `src/lib_c.zig` (for the `etir_docx_compare` export, Spec 01‑owned)
 
@@ -19,7 +19,7 @@ Primary files:
 
 General rules:
 
-- .NET project should be self‑contained under `native/comparer/`.
+- .NET project should be self-contained under `src/comparer/dotnet/`.
 - Do not commit built binaries; CI and `zig build` should produce them.
 - Zig wrapper should:
   - Use `extern` declarations for the NativeAOT function.
@@ -47,7 +47,7 @@ Parallelization:
 ## 4. Implementation tasks (ordered)
 
 1. NativeAOT comparer:
-   - Create `native/comparer/src/EtirComparer.csproj` targeting .NET 8 with NativeAOT.
+   - Create `src/comparer/dotnet/EtirComparer.csproj` targeting .NET 8 with NativeAOT.
    - Implement `Program.cs` (or `Entry.cs`) with:
      - `UnmanagedCallersOnly(EntryPoint = "docx_compare")`.
      - UTF‑8 path decoding via `Marshal.PtrToStringUTF8`.

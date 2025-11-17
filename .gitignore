@@ -7,3 +7,7 @@ bindings/js/.turbo/
 bindings/js/.parcel-cache/
 bindings/js/bun.lockb
 bun.lockb
+.dotnet/
+src/comparer/publish/
+src/comparer/dotnet/bin/
+src/comparer/dotnet/obj/

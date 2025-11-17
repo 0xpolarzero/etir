@@ -47,7 +47,7 @@ pub fn setup(b: *std.Build, opts: common.Options, inputs: Inputs) Outputs {
 
     const install = b.addInstallArtifact(addon, .{ .dest_sub_path = "node/etir.node" });
 
-    const step = b.step("node-addon", "Build the Node.js native addon");
+    const step = b.step("node", "Build the Node.js native addon");
     step.dependOn(&install.step);
 
     return .{

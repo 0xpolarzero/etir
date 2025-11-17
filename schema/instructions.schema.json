@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/instructions.schema.json",
+  "title": "ETIR Instructions Pack",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "tokens",
+    "allowedOperations",
+    "systemPrompt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "tokens": {
+      "type": "object",
+      "required": ["tab", "lineBreak", "softHyphen", "noBreakHyphen", "anchors"],
+      "additionalProperties": false,
+      "properties": {
+        "tab": { "const": "\t" },
+        "lineBreak": { "const": "\n" },
+        "softHyphen": { "const": "\u00ad" },
+        "noBreakHyphen": { "const": "\u2011" },
+        "anchors": {
+          "type": "object",
+          "required": [
+            "footnoteRef",
+            "endnoteRef",
+            "bookmarkStart",
+            "bookmarkEnd",
+            "commentStart",
+            "commentEnd",
+            "hyperlinkBoundary"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "footnoteRef": { "const": "Do not remove or move this reference." },
+            "endnoteRef": { "const": "Do not remove or move." },
+            "bookmarkStart": { "const": "Zero-width; must remain before bookmarkEnd(id)." },
+            "bookmarkEnd": { "const": "Zero-width; must remain after bookmarkStart(id)." },
+            "commentStart": { "const": "Zero-width; keep with matching commentEnd(id)." },
+            "commentEnd": { "const": "Zero-width; keep with commentStart(id)." },
+            "hyperlinkBoundary": { "const": "Do not cross this boundary." }
+          }
+        }
+      }
+    },
+    "allowedOperations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["before", "after"],
+        "additionalProperties": false,
+        "properties": {
+          "before": { "type": "string" },
+          "after": { "type": "string" }
+        }
+      }
+    },
+    "systemPrompt": { "type": "string" },
+    "blockSummaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pid", "kind", "anchorCounts"],
+        "additionalProperties": false,
+        "properties": {
+          "pid": { "type": "string" },
+          "kind": { "type": "string" },
+          "anchorCounts": {
+            "type": "object",
+            "required": ["total", "types"],
+            "properties": {
+              "total": { "type": "integer", "minimum": 0 },
+              "types": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "protectedZones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "range": {
+                  "type": "array",
+                  "items": { "type": "integer" },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            }
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

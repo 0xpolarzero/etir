@@ -343,7 +343,7 @@ pub export fn etir_docx_last_error() [*:0]const u8 { return last.get(); }
 
 ## 5) NativeAOT .NET comparer (single exported symbol)
 
-`native/comparer/Program.cs` (C# 12 / .NET 8 NativeAOT)
+`src/comparer/dotnet/Program.cs` (C# 12 / .NET 8 NativeAOT)
 
 ```csharp
 using System;

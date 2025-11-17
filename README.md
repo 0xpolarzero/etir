@@ -13,6 +13,7 @@ Composable Zig library with a native Node.js addon built in Zig. The root `build
 npm install --prefix bindings/js
 zig build                    # native static + shared libs
 zig build node               # (optional) build the N-API addon only
+zig build comparer           # publish the NativeAOT DOCX comparer for the current RID
 zig build package           # builds addon, installs deps, emits dist/esm
 zig build test               # Zig inline tests + Vitest (addon)
 zig build lint               # zig fmt + Biome lint/format

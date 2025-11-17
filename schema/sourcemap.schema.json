@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/sourcemap.schema.json",
+  "title": "ETIR SourceMap",
+  "type": "object",
+  "required": ["pid", "segments"],
+  "additionalProperties": false,
+  "properties": {
+    "pid": { "type": "string" },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["irRange", "part", "paraOrdinal", "runIndexPath", "tCharRange"],
+        "additionalProperties": false,
+        "properties": {
+          "irRange": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "part": { "type": "string" },
+          "paraOrdinal": { "type": "integer", "minimum": 0 },
+          "runIndexPath": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 }
+          },
+          "tCharRange": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "protectedZones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

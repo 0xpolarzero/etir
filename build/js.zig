@@ -7,6 +7,7 @@ pub const Inputs = struct {
 };
 
 pub const Outputs = struct {
+    install: *std.Build.Step.Run,
     typecheck: *std.Build.Step.Run,
     build: *std.Build.Step.Run,
     stage: *std.Build.Step.Run,
@@ -37,6 +38,7 @@ pub fn setup(b: *std.Build, js: common.JsConfig, inputs: Inputs) Outputs {
     js_step.dependOn(&build_cmd.step);
 
     return .{
+        .install = install_cmd,
         .typecheck = typecheck,
         .build = build_cmd,
         .stage = stage_cmd,

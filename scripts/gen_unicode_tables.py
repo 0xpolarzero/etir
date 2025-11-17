@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+import urllib.request
+import pathlib
+import sys
+import textwrap
+
+UNICODE_VERSION = "15.1.0"
+BASE = f"https://www.unicode.org/Public/{UNICODE_VERSION}/ucd"
+S_BASE = 0xAC00
+L_BASE = 0x1100
+V_BASE = 0x1161
+T_BASE = 0x11A7
+L_COUNT = 19
+V_COUNT = 21
+T_COUNT = 28
+N_COUNT = V_COUNT * T_COUNT
+S_COUNT = L_COUNT * N_COUNT
+
+def fetch(path: str) -> str:
+    url = f"{BASE}/{path}"
+    with urllib.request.urlopen(url) as resp:
+        return resp.read().decode("utf-8")
+
+
+def parse_unicode_data(text: str):
+    ccc_entries = []
+    decomps = []
+    for raw in text.splitlines():
+        if not raw:
+            continue
+        parts = raw.split(";")
+        code = int(parts[0], 16)
+        name = parts[1]
+        if "First>" in name or "Last>" in name:
+            continue
+        ccc = int(parts[3])
+        if ccc != 0:
+            ccc_entries.append((code, ccc))
+        decomp = parts[5]
+        if decomp and not decomp.startswith("<"):
+            mapping = [int(tok, 16) for tok in decomp.split()]
+            # Skip Hangul algorithmic decomposition to keep the table compact.
+            if S_BASE <= code < S_BASE + S_COUNT:
+                continue
+            decomps.append((code, mapping))
+    ccc_entries.sort()
+    decomps.sort()
+    return ccc_entries, decomps
+
+
+def parse_composition_exclusions(text: str):
+    exclusions = set()
+    for raw in text.splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        if '..' in line:
+            start_s, end_s = [seg.strip() for seg in line.split('..')]
+            start = int(start_s, 16)
+            end = int(end_s, 16)
+        else:
+            start = end = int(line, 16)
+        for code in range(start, end + 1):
+            exclusions.add(code)
+    return exclusions
+
+
+def parse_grapheme_break_property(text: str):
+    ranges = []
+    for raw in text.splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        range_part, prop_part = [seg.strip() for seg in line.split(';', 1)]
+        if '..' in range_part:
+            start_s, end_s = range_part.split('..')
+            start = int(start_s, 16)
+            end = int(end_s, 16)
+        else:
+            start = end = int(range_part, 16)
+        ranges.append((start, end, prop_part))
+    ranges.sort()
+    return ranges
+
+
+def parse_extended_pict(text: str):
+    ranges = []
+    for raw in text.splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        range_part, prop_part = [seg.strip() for seg in line.split(';', 1)]
+        if prop_part != "Extended_Pictographic":
+            continue
+        if '..' in range_part:
+            start_s, end_s = range_part.split('..')
+            start = int(start_s, 16)
+            end = int(end_s, 16)
+        else:
+            start = end = int(range_part, 16)
+        ranges.append((start, end))
+    ranges.sort()
+    return ranges
+
+
+def make_decomp_tables(decomps):
+    data = []
+    entries = []
+    for code, mapping in decomps:
+        offset = len(data)
+        data.extend(mapping)
+        entries.append((code, offset, len(mapping)))
+    return entries, data
+
+
+def make_composition_table(decomps, exclusions):
+    entries = []
+    for code, mapping in decomps:
+        if len(mapping) != 2:
+            continue
+        if code in exclusions:
+            continue
+        if S_BASE <= code < S_BASE + S_COUNT:
+            continue
+        first, second = mapping
+        entries.append((first, second, code))
+    entries.sort()
+    return entries
+
+
+def map_gb_property(name: str) -> str:
+    mapping = {
+        "Other": "0",
+        "CR": "1",
+        "LF": "2",
+        "Control": "3",
+        "Extend": "4",
+        "Regional_Indicator": "5",
+        "Prepend": "6",
+        "SpacingMark": "7",
+        "L": "8",
+        "V": "9",
+        "T": "10",
+        "LV": "11",
+        "LVT": "12",
+        "ZWJ": "13",
+    }
+    return mapping.get(name, "0")
+
+
+def emit_array(f, indent, name, type_name, rows):
+    f.write(f"{indent}pub const {name} = [_]{type_name}{{\n")
+    for row in rows:
+        f.write(indent + "    .{ " + ', '.join(f".{k} = {v}" for k, v in row.items()) + " },\n")
+    f.write(f"{indent}}};\n")
+
+
+def main(dest: pathlib.Path):
+    unicode_data = fetch("UnicodeData.txt")
+    exclusions = fetch("CompositionExclusions.txt")
+    gbp = fetch("auxiliary/GraphemeBreakProperty.txt")
+    emoji = fetch("emoji/emoji-data.txt")
+
+    ccc_entries, decomps = parse_unicode_data(unicode_data)
+    exclusion_set = parse_composition_exclusions(exclusions)
+    decomp_entries, decomp_data = make_decomp_tables(decomps)
+    composition_entries = make_composition_table(decomps, exclusion_set)
+    gb_ranges = parse_grapheme_break_property(gbp)
+    ep_ranges = parse_extended_pict(emoji)
+
+    with dest.open('w', encoding='utf-8') as f:
+        f.write("// Code generated by scripts/gen_unicode_tables.py\n")
+        f.write(f"// Unicode version {UNICODE_VERSION}\n")
+        f.write("pub const normalization = struct {\n")
+        f.write("    pub const Decomp = struct { scalar: u21, offset: u32, len: u16 };\n")
+        f.write("    pub const decomp_index = [_]Decomp{\n")
+        for code, offset, length in decomp_entries:
+            f.write(f"        .{{ .scalar = 0x{code:04X}, .offset = {offset}, .len = {length} }},\n")
+        f.write("    };\n")
+        f.write("    pub const decomp_data = [_]u21{\n")
+        line_len = 0
+        f.write("        ")
+        for idx, value in enumerate(decomp_data):
+            entry = f"0x{value:04X}"
+            if line_len + len(entry) + 2 > 80:
+                f.write("\n        ")
+                line_len = 0
+            f.write(entry)
+            if idx + 1 != len(decomp_data):
+                f.write(", ")
+            line_len += len(entry) + 2
+        f.write("\n    };\n")
+        f.write("    pub const Ccc = struct { scalar: u21, class: u8 };\n")
+        f.write("    pub const ccc_table = [_]Ccc{\n")
+        for code, cls in ccc_entries:
+            f.write(f"        .{{ .scalar = 0x{code:04X}, .class = {cls} }},\n")
+        f.write("    };\n")
+        f.write("    pub const Composition = struct { first: u21, second: u21, composed: u21 };\n")
+        f.write("    pub const compositions = [_]Composition{\n")
+        for first, second, composed in composition_entries:
+            f.write(
+                f"        .{{ .first = 0x{first:04X}, .second = 0x{second:04X}, .composed = 0x{composed:04X} }},\n"
+            )
+        f.write("    };\n")
+        f.write("};\n\n")
+        f.write("pub const grapheme = struct {\n")
+        f.write("    pub const Range = struct { start: u21, end: u21, prop: u8 };\n")
+        f.write("    pub const ranges = [_]Range{\n")
+        for start, end, prop in gb_ranges:
+            prop_code = map_gb_property(prop)
+            f.write(f"        .{{ .start = 0x{start:04X}, .end = 0x{end:04X}, .prop = {prop_code} }},\n")
+        f.write("    };\n")
+        f.write("    pub const ExtendedRange = struct { start: u21, end: u21 };\n")
+        f.write("    pub const extended = [_]ExtendedRange{\n")
+        for start, end in ep_ranges:
+            f.write(f"        .{{ .start = 0x{start:04X}, .end = 0x{end:04X} }},\n")
+        f.write("    };\n")
+        f.write("};\n")
+
+
+if __name__ == "__main__":
+dest = pathlib.Path("src/internal/util/unicode_data.zig")
+    if len(sys.argv) > 1:
+        dest = pathlib.Path(sys.argv[1])
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    main(dest)

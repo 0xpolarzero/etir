@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/etir.schema.json",
+  "title": "Editable Text IR",
+  "type": "object",
+  "required": ["version", "fingerprint", "blocks"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": "1.0" },
+    "fingerprint": {
+      "type": "object",
+      "required": ["fileHash", "storyHashes", "pidIndex"],
+      "additionalProperties": false,
+      "properties": {
+        "fileHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "storyHashes": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "pidIndex": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["part", "kind", "pid", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "part": {
+            "type": "string",
+            "pattern": "^word/(document|header\\d+|footer\\d+|footnotes|endnotes|comments)\\.xml$"
+          },
+          "kind": {
+            "enum": [
+              "paragraph",
+              "headerParagraph",
+              "footerParagraph",
+              "footnote",
+              "endnote",
+              "comment",
+              "textboxParagraph"
+            ]
+          },
+          "pid": { "type": "string" },
+          "style": { "type": "string" },
+          "text": { "type": "string" },
+          "anchors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "enum": [
+                    "footnoteRef",
+                    "endnoteRef",
+                    "commentStart",
+                    "commentEnd",
+                    "bookmarkStart",
+                    "bookmarkEnd",
+                    "commentReference",
+                    "hyperlinkBoundary"
+                  ]
+                },
+                "id": { "type": "string" },
+                "at": { "type": "integer", "minimum": 0 }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "type": { "const": "hyperlinkBoundary" } } },
+                  "then": { "required": ["at"] }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "enum": ["commentStart", "commentEnd", "bookmarkStart", "bookmarkEnd"]
+                      }
+                    }
+                  },
+                  "then": { "required": ["id", "at"] }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "enum": ["footnoteRef", "endnoteRef", "commentReference"]
+                      }
+                    }
+                  },
+                  "then": { "required": ["id", "at"] }
+                }
+              ]
+            }
+          },
+          "protectedZones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": { "enum": ["fieldInstr", "hyperlinkBoundary", "mathZone"] },
+                "range": {
+                  "type": "array",
+                  "items": { "type": "integer" },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "at": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

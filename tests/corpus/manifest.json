@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "name": "comprehensive-mixed-content",
+      "file": "tests/corpus/comprehensive-mixed-content.docx",
+      "sha256": "73cb4e89e8f7fe4c3a684d1b04cbc6dd9165c92e5f6adc12da431546254d00b9",
+      "features": [
+        "emoji",
+        "complex-script",
+        "tabs",
+        "line-breaks",
+        "soft-hyphen",
+        "no-break-hyphen",
+        "hyperlinks",
+        "bookmarks",
+        "comments",
+        "footnotes",
+        "endnotes",
+        "tables-nested",
+        "tables-merged",
+        "textboxes-modern",
+        "textboxes-legacy",
+        "headers-footers-fields"
+      ],
+      "notes": "Single DOCX fixture exercising the ETIR surface area required by Spec 08."
+    }
+  ]
+}

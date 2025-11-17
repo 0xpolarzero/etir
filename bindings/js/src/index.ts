@@ -82,3 +82,7 @@ export const etir: EtirClient = {
     return ensureBinding().etir_version();
   },
 };
+
+export const __testing = {
+  resolveNativeLibrary,
+};
