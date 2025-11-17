@@ -10,9 +10,9 @@ This spec covers the implementation of the DOCX compare engine and its Zig wrapp
 
 Primary files:
 
-- `native/comparer/EtirComparer.csproj`
+- `native/comparer/src/EtirComparer.csproj`
 - `native/comparer/Program.cs`
-- `src/compare.zig`
+- `src/comparer/compare.zig`
 - `src/lib_c.zig` (for the `etir_docx_compare` export, Spec 01‑owned)
 
 ## 2. Repo & agent guidelines (local rules)
@@ -47,7 +47,7 @@ Parallelization:
 ## 4. Implementation tasks (ordered)
 
 1. NativeAOT comparer:
-   - Create `native/comparer/EtirComparer.csproj` targeting .NET 8 with NativeAOT.
+   - Create `native/comparer/src/EtirComparer.csproj` targeting .NET 8 with NativeAOT.
    - Implement `Program.cs` (or `Entry.cs`) with:
      - `UnmanagedCallersOnly(EntryPoint = "docx_compare")`.
      - UTF‑8 path decoding via `Marshal.PtrToStringUTF8`.
@@ -56,7 +56,7 @@ Parallelization:
      - Call to `WmlComparer.Compare` and saving to output path.
      - Non‑zero return value on error.
    - Configure RID matrix build: `win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`.
-2. Zig compare wrapper (`src/compare.zig`):
+2. Zig compare wrapper (`src/comparer/compare.zig`):
    - Declare `extern fn docx_compare(...) callconv(.C) c_int;`.
    - Implement `run(before, after, out, author, date_iso)` returning `union(enum) { ok, err: { code, msg } }`.
    - Perform basic existence checks for `before` and `after` paths; map to `OPEN_FAILED_BEFORE` / `OPEN_FAILED_AFTER`.
@@ -160,4 +160,3 @@ pub fn run(before: []const u8, after: []const u8, out: []const u8, author: []con
     fn toZ(s: []const u8) [*:0]const u8 { return @ptrCast([*:0]const u8, s.ptr); }
 }
 ```
-

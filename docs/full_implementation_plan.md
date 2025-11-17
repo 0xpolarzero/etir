@@ -32,7 +32,7 @@ etir/
 │  │  ├─ model.zig             # ETIR/SourceMap/Instructions structs + JSON encode/decode
 │  │  ├─ to_etir.zig           # DOCX → ETIR + SourceMap
 │  │  └─ from_etir.zig         # ETIR → after.docx (safe write-back)
-│  ├─ compare.zig              # FFI to NativeAOT comparer + path/author/date plumbing
+│  ├─ comparer/compare.zig     # FFI to NativeAOT comparer + path/author/date plumbing
 │  └─ util/
 │     ├─ json.zig              # DOM-free streaming JSON writer/reader
 │     └─ strings.zig           # NFC normalize, XML entity escapes, etc.
@@ -255,7 +255,7 @@ pub fn get() [*:0]const u8 {
 const std = @import("std");
 const errors = @import("errors.zig");
 const last = @import("last_error.zig");
-const compare_mod = @import("compare.zig");
+const compare_mod = @import("comparer/compare.zig");
 const to = @import("etir/to_etir.zig");
 const from = @import("etir/from_etir.zig");
 const instr = @import("etir/model.zig").instructionsFromEtir;
@@ -401,7 +401,7 @@ public static class Entry
 
 ## 6) Compare wrapper (Zig → NativeAOT)
 
-`src/compare.zig`
+`src/comparer/compare.zig`
 
 ```zig
 const std = @import("std");

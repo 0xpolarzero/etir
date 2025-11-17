@@ -71,7 +71,7 @@ Parallelization guidance:
    - Internal helpers `ok()` and `fail()`.
    - `etir_docx_to_etir` → calls `etir/to_etir.zig`’s `run`.
    - `etir_docx_from_etir` → calls `etir/from_etir.zig`’s `run`.
-   - `etir_docx_compare` → calls `compare.zig`’s `run`.
+   - `etir_docx_compare` → calls `comparer/compare.zig`’s `run`.
    - `etir_docx_get_instructions` → calls `etir/model.zig`’s `instructionsFromEtir` (or `instructionsFromEtirEmit`).
    - `etir_docx_last_error` → returns the last error string.
 6. Add or update inline Zig tests to:
@@ -105,7 +105,7 @@ This section contains the relevant parts of `docs/full_implementation_plan.md` t
 > │  │  ├─ model.zig             # ETIR/SourceMap/Instructions structs + JSON encode/decode  
 > │  │  ├─ to_etir.zig           # DOCX → ETIR + SourceMap  
 > │  │  └─ from_etir.zig         # ETIR → after.docx (safe write-back)  
-> │  ├─ compare.zig              # FFI to NativeAOT comparer + path/author/date plumbing  
+> │  ├─ comparer/compare.zig     # FFI to NativeAOT comparer + path/author/date plumbing  
 > │  └─ util/  
 > │     ├─ json.zig              # DOM-free streaming JSON writer/reader  
 > │     └─ strings.zig           # NFC normalize, XML entity escapes, etc.  
@@ -121,12 +121,14 @@ This section contains the relevant parts of `docs/full_implementation_plan.md` t
 > │  ├─ etir.schema.json  
 > │  ├─ sourcemap.schema.json  
 > │  └─ instructions.schema.json  
-> ├─ tests/  
-> │  ├─ corpus/                  # .docx fixtures (see Verification corpus below)  
-> │  ├─ unit/                    # Zig tests for parsing/writing JSON, graphemes, etc.  
-> │  └─ e2e/                     # end-to-end tests (compare results, validation oracles)  
-> └─ CI/  
+> ├─ tests/
+> │  ├─ corpus/                  # .docx fixtures (see Verification corpus below)
+> │  ├─ fixtures/                # comparer smoke-test DOCX pairs
+> │  └─ e2e/                     # end-to-end tests (compare results, validation oracles)
+> └─ CI/
 >    └─ github-actions.yml       # build matrix + fixtures checks
+>
+> _Zig inline tests live beside their respective modules under `src/`; the `tests/` tree only holds long-lived DOCX fixtures and e2e harnesses._
 
 ### 5.2 JSON Schemas (wire‑level contracts)
 
@@ -369,7 +371,7 @@ pub fn get() [*:0]const u8 {
 const std = @import("std");
 const errors = @import("errors.zig");
 const last = @import("last_error.zig");
-const compare_mod = @import("compare.zig");
+const compare_mod = @import("comparer/compare.zig");
 const to = @import("etir/to_etir.zig");
 const from = @import("etir/from_etir.zig");
 const instr = @import("etir/model.zig").instructionsFromEtir;
@@ -463,4 +465,3 @@ From §20 of the full plan:
 - Determinism knobs: author/date inputs to comparer for reproducible diffs.
 
 All implementations and future changes to this spec must preserve these guarantees.
-

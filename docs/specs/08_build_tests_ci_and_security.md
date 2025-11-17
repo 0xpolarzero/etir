@@ -17,7 +17,7 @@ This spec covers:
 Primary files:
 
 - `build.zig`, `build/*.zig`
-- `tests/corpus/*`, `tests/unit/*`, `tests/e2e/*`
+- `tests/corpus/*`, inline Zig tests under `src/**/*.zig`, `tests/e2e/*`
 - `.github/workflows/*` (or `CI/github-actions.yml`)
 
 ## 2. Repo & agent guidelines (local rules)
@@ -210,4 +210,3 @@ From §17 of the full plan:
 > * The visible text changes only inside editable segments.  
 > * `footnoteRef` at cluster 28 is preserved exactly.  
 > * A hyperlink boundary at 35 is not crossed.
-

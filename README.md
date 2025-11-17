@@ -46,7 +46,7 @@ Run each concern with Zig steps:
 - `zig build` / `zig build lib` – builds the static/shared Zig libraries (`libetir.*`).
 - `zig build node` – compiles the N-API addon (`etir.node`) that Node uses.
 - `zig build package` – builds the addon, installs npm deps, stages `etir.node`, and runs the TypeScript build.
-- `zig build test` – runs the inline Zig tests plus the Vitest suite (real addon, no mocks).
+- `zig build test` – runs the inline Zig tests plus the Vitest suite (real addon, no mocks)—`zig build test --summary all` or `--verbose` for more details.
 - `zig build lint` / `zig build fmt` – Biome lint/format for JS plus `zig fmt` for the Zig tree.
 - `zig build all` – runs the library build, package, lint/format, and test steps in one go.
 - `zig build clean` – Removes `.zig-cache`, `zig-out`, and runs the bindings clean script (which wipes `dist` and `node_modules`).

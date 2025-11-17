@@ -35,7 +35,7 @@ Each individual spec file repeats the relevant parts of these rules plus its own
   Instructions JSON schema and the `instructionsFromEtir` logic in `src/etir/model.zig`.
 
 - `06_compare_engine.md`  
-  NativeAOT compare binary (OpenXmlPowerTools) and Zig wrapper (`src/compare.zig`) feeding `etir_docx_compare`.
+  NativeAOT compare binary (OpenXmlPowerTools) and Zig wrapper (`src/comparer/compare.zig`) feeding `etir_docx_compare`.
 
 - `07_node_api_and_js_bindings.md`  
   Node‑API addon in Zig (`src/lib_node.zig`) and the TypeScript `Etir` helper (`bindings/js/src/index.ts` + tests).
