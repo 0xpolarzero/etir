@@ -1,0 +1,32 @@
+{
+  "name": "@etir/node",
+  "version": "0.1.0",
+  "description": "Node.js bindings for the etir Zig library",
+  "type": "module",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist",
+    "dist/native"
+  ],
+  "scripts": {
+    "stage-native": "node ./scripts/stage-native.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run stage-native && tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "lint": "biome lint --write --unsafe",
+    "format": "biome format --write",
+    "clean": "rimraf dist node_modules"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.5",
+    "@types/node": "^24.10.1",
+    "rimraf": "^6.1.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.9"
+  },
+  "packageManager": "npm@10.8.1"
+}

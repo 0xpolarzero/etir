@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read
+
+env:
+  ZIG_VERSION: 0.15.2
+  NODE_VERSION: '24.x'
+  JS_DIR: bindings/js
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }} · ${{ matrix.optimize }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        optimize: [Debug, ReleaseSmall, ReleaseSafe, ReleaseFast]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig ${{ env.ZIG_VERSION }}
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.JS_DIR }}/package-lock.json
+
+      - name: Build
+        run: zig build -Doptimize=${{ matrix.optimize }}
+
+      - name: Debug - List zig-out (Windows)
+        if: always() && runner.os == 'Windows'
+        run: |
+          set -euo pipefail
+          echo '=== zig-out/lib snapshot ==='
+          if [ -d zig-out/lib ]; then
+            find zig-out/lib -maxdepth 2 -type f 2>/dev/null | head -40 || true
+          else
+            echo 'zig-out/lib missing'
+          fi
+          echo '=== zig-cache contents ==='
+          if [ -d zig-cache ]; then
+            ls -la zig-cache | head -40
+          else
+            echo 'zig-cache missing'
+          fi
+
+      - name: Test
+        run: zig build test -Doptimize=${{ matrix.optimize }}
+
+  package:
+    name: Package + Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig ${{ env.ZIG_VERSION }}
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.JS_DIR }}/package-lock.json
+
+      - name: Build native libraries
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Build Node addon
+        run: zig build node-addon -Doptimize=ReleaseFast
+
+      - name: Build npm package bundle
+        run: zig build package -Doptimize=ReleaseFast
+
+      - name: Pack npm artifact
+        id: pack
+        working-directory: ${{ env.JS_DIR }}
+        run: |
+          set -euo pipefail
+          PACK_JSON=$(npm pack --json)
+          echo "$PACK_JSON" | jq '.'
+          TARBALL=$(echo "$PACK_JSON" | jq -r '.[0].filename')
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload npm package
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-${{ github.run_id }}
+          path: ${{ env.JS_DIR }}/${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 7
+
+  lint:
+    name: Zig + JS Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Zig ${{ env.ZIG_VERSION }}
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.JS_DIR }}/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: ${{ env.JS_DIR }}
+        run: npm ci
+
+      - name: Check Zig formatting
+        run: zig fmt --check .
+
+      - name: Biome lint (no writes)
+        working-directory: ${{ env.JS_DIR }}
+        run: npm exec biome lint -- --reporter summary
+
+      - name: Biome format check
+        working-directory: ${{ env.JS_DIR }}
+        run: npm exec biome format -- --reporter summary
+
+  bindings:
+    name: TypeScript Bindings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig ${{ env.ZIG_VERSION }}
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.JS_DIR }}/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: ${{ env.JS_DIR }}
+        run: npm ci
+
+      - name: Build Node addon (ReleaseFast)
+        run: zig build node-addon -Doptimize=ReleaseFast
+
+      - name: Typecheck bindings
+        working-directory: ${{ env.JS_DIR }}
+        run: npm run typecheck
+
+      - name: Build bindings dist
+        working-directory: ${{ env.JS_DIR }}
+        run: npm run build
+
+      - name: Run bindings tests
+        working-directory: ${{ env.JS_DIR }}
+        env:
+          ETIR_NATIVE_PATH: ${{ github.workspace }}/zig-out/lib/node/etir.node
+        run: npm run test

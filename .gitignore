@@ -1,0 +1,9 @@
+.zig-cache/
+zig-out/
+*.o
+node_modules/
+bindings/js/dist/
+bindings/js/.turbo/
+bindings/js/.parcel-cache/
+bindings/js/bun.lockb
+bun.lockb
